@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIGEC Moçambique - VIMO (Restaurantes & Lanchonetes)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; user-select: none; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 h-screen w-screen overflow-hidden flex flex-col md:flex-row">
+
+    <!-- MOBILE BACKDROP -->
+    <div id="mobile-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden md:hidden" onclick="toggleMobileSidebar(false)"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
+        <div>
+            <div class="p-4 md:p-5 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-amber-500 p-2 rounded-xl text-slate-900 font-bold">
+                        <i data-lucide="utensils" class="w-5 h-5 text-slate-900"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-black text-base leading-tight text-white">SIGEC MOZ</h1>
+                        <span class="text-[10px] text-amber-400 font-bold block">Restaurantes & Lanchonetes</span>
+                    </div>
+                </div>
+                <button onclick="toggleMobileSidebar(false)" class="md:hidden text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="p-3 m-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                    <span>Perfil Activo:</span>
+                    <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+                </div>
+                <select id="user-role-select" onchange="changeUserRole(this.value)" class="w-full bg-slate-900 text-xs text-amber-400 font-semibold p-2.5 rounded-lg border border-slate-700">
+                    <option value="ADMIN">Administrador (Total)</option>
+                    <option value="GESTOR">Gestor</option>
+                    <option value="VENDEDOR">Caixa / Garçom</option>
+                    <option value="STOCK">Armazém / Cozinha</option>
+                </select>
+            </div>
+
+            <nav class="mt-2 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-280px)]" id="desktop-nav-items">
+                <!-- Injetado via JS -->
+            </nav>
+        </div>
+
+        <div class="p-3 border-t border-slate-800 space-y-2">
+            <button onclick="resetDemoData()" class="w-full text-xs flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl transition">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restaurar Dados Demo
+            </button>
+            <div class="text-[10px] text-slate-500 text-center">SIGEC &copy; 2026 - VIMO</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden w-full h-full">
+        <header class="bg-white border-b border-slate-200 px-3 md:px-6 py-2.5 md:py-3 flex items-center justify-between shadow-sm z-30">
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <button onclick="toggleMobileSidebar(true)" class="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg border">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <h2 id="page-title" class="text-sm md:text-xl font-bold text-slate-800 truncate">Painel Principal</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="stock-alert-badge" onclick="navigateTo('stock')" class="hidden flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-600 animate-pulse"></i>
+                    <span id="stock-alert-count">0 Alertas</span>
+                </button>
+                <div class="flex items-center bg-slate-100 p-1 rounded-lg border">
+                    <button id="curr-mzn" onclick="setCurrency('MZN')" class="px-2 py-0.5 text-xs font-bold rounded bg-emerald-600 text-white">MT</button>
+                    <button id="curr-usd" onclick="setCurrency('USD')" class="px-2 py-0.5 text-xs font-bold rounded text-slate-600">$</button>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 bg-slate-50 pb-20 md:pb-6">
+            <!-- Vistas Dinâmicas -->
+        </main>
+
+        <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 text-slate-400 flex justify-around items-center h-16 z-30 shadow-lg px-1">
+            <!-- Bottom Nav -->
+        </nav>
+    </div>
+
+    <!-- MODAL DE MESAS -->
+    <div id="table-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 id="table-modal-title" class="font-bold text-slate-800 text-base">Gerir Mesa</h3>
+                <button onclick="closeTableModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="table-modal-body" class="space-y-3 text-xs">
+                <!-- Conteúdo da mesa -->
+            </div>
+            <button onclick="closeTableModal()" class="w-full py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs">Fechar</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE FICHA TÉCNICA -->
+    <div id="recipe-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl p-5 w-full max-w-lg space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 class="font-bold text-slate-800 text-base">Ficha Técnica & Ingredientes</h3>
+                <button onclick="closeRecipeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="recipe-modal-body" class="space-y-3 text-xs max-h-60 overflow-y-auto">
+                <!-- Ingredientes da receita -->
+            </div>
+            <div class="pt-2 border-t flex gap-2">
+                <input type="text" id="recipe-ing-name" placeholder="Nome Ingrediente (ex: Pão)" class="flex-1 p-2 border rounded-xl text-xs">
+                <input type="number" id="recipe-ing-qty" placeholder="Qtd" class="w-20 p-2 border rounded-xl text-xs">
+                <button onclick="addRecipeIngredient()" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-bold text-xs">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LOGICA DO SISTEMA -->
+    <script>
+        const INITIAL_PRODUCTS = [
+            { id: 'PROD-001', code: 'PRD7890', name: 'Hambúrguer Completo VIMO', category: 'Lanches', buyPrice: 120, sellPrice: 250, stock: 50, minStock: 10, unit: 'Un', recipe: [{name: 'Pão de hambúrguer', qty: 1}, {name: 'Carne picada', qty: 150}] },
+            { id: 'PROD-002', code: 'PRD7891', name: 'Prato do Dia (Peixe Frito)', category: 'Pratos', buyPrice: 180, sellPrice: 350, stock: 30, minStock: 5, unit: 'Prato', recipe: [{name: 'Peixe fresco', qty: 1}, {name: 'Batata', qty: 200}] },
+            { id: 'PROD-003', code: 'PRD7892', name: 'Sumo Natural de Manga 500ml', category: 'Bebidas', buyPrice: 35, sellPrice: 80, stock: 60, minStock: 15, unit: 'Copos', recipe: [{name: 'Manga', qty: 2}] },
+            { id: 'PROD-004', code: 'PRD7893', name: 'Cerveja 2M 330ml', category: 'Bebidas', buyPrice: 55, sellPrice: 90, stock: 120, minStock: 24, unit: 'Garrafa', recipe: [] }
+        ];
+
+        let tables = [
+            { id: 1, name: 'Mesa 01 (Esplanada)', status: 'LIVRE', items: [], total: 0 },
+            { id: 2, name: 'Mesa 02 (Salão)', status: 'LIVRE', items: [], total: 0 },
+            { id: 3, name: 'Mesa 03 (Salão)', status: 'LIVRE', items: [], total: 0 },
+            { id: 4, name: 'Balcão / Takeaway', status: 'LIVRE', items: [], total: 0 }
+        ];
+
+        let products = JSON.parse(localStorage.getItem('sigec_rest_products')) || INITIAL_PRODUCTS;
+        let sales = JSON.parse(localStorage.getItem('sigec_rest_sales')) || [];
+        let activeTab = 'mesas';
+        let currency = 'MZN';
+        let currentUserRole = 'ADMIN';
+        let currentActiveTableId = null;
+
+        function saveData() {
+            localStorage.setItem('sigec_rest_products', JSON.stringify(products));
+            localStorage.setItem('sigec_rest_sales', JSON.stringify(sales));
+        }
+
+        function formatMoney(amount) {
+            return `${Number(amount || 0).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
+        }
+
+        function setCurrency(curr) {
+            currency = curr;
+            renderCurrentView();
+        }
+
+        function changeUserRole(role) {
+            currentUserRole = role;
+            renderNavigation();
+            navigateTo('mesas');
+        }
+
+        function toggleMobileSidebar(show) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('mobile-backdrop');
+            if (show) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function navigateTo(tab) {
+            activeTab = tab;
+            toggleMobileSidebar(false);
+            renderNavigation();
+            renderCurrentView();
+            window.scrollTo(0, 0);
+        }
+
+        function renderNavigation() {
+            const navItems = [
+                { id: 'mesas', label: 'Gestão de Mesas', icon: 'grid' },
+                { id: 'pos', label: 'Caixa / POS Rápido', icon: 'shopping-cart' },
+                { id: 'stock', label: 'Stock & Ficha Técnica', icon: 'package' },
+                { id: 'relatorios', label: 'Relatórios & Vendas', icon: 'file-text' }
+            ];
+
+            document.getElementById('desktop-nav-items').innerHTML = navItems.map(item => `
+                <button onclick="navigateTo('${item.id}')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === item.id ? 'bg-amber-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+                        <span>${item.label}</span>
+                    </div>
+                </button>
+            `).join('');
+
+            document.getElementById('mobile-bottom-nav').innerHTML = navItems.map(item => `
+                <button onclick="navigateTo('${item.id}')" class="flex flex-col items-center justify-center w-full h-full ${activeTab === item.id ? 'text-amber-400 font-bold' : 'text-slate-400'}">
+                    <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                    <span class="text-[10px] mt-1">${item.label.split(' ')[0]}</span>
+                </button>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderCurrentView() {
+            const container = document.getElementById('main-content');
+            const title = document.getElementById('page-title');
+
+            if (activeTab === 'mesas') {
+                title.innerText = "Salão - Gestão de Mesas";
+                renderTablesView(container);
+            } else if (activeTab === 'pos') {
+                title.innerText = "Caixa & Registo Direto";
+                renderPOSView(container);
+            } else if (activeTab === 'stock') {
+                title.innerText = "Inventário & Receitas (Ficha Técnica)";
+                renderStockView(container);
+            } else if (activeTab === 'relatorios') {
+                title.innerText = "Relatório de Caixa";
+                renderReportsView(container);
+            }
+            lucide.createIcons();
+        }
+
+        // --- 1. GESTÃO DE MESAS ---
+        function renderTablesView(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    ${tables.map(t => `
+                        <div onclick="openTable(${t.id})" class="bg-white p-5 rounded-2xl border shadow-sm cursor-pointer transition hover:shadow-md flex flex-col justify-between ${t.status === 'OCUPADA' ? 'border-amber-400 bg-amber-50/30' : 'border-slate-200'}">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="font-bold text-slate-800 text-sm">${t.name}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${t.status === 'OCUPADA' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${t.status}</span>
+                                </div>
+                                <div class="text-xs text-slate-500">${t.items.length} item(ns) registado(s)</div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t flex justify-between items-center">
+                                <span class="text-xs text-slate-400">Total Consumo:</span>
+                                <span class="font-extrabold text-emerald-600">${formatMoney(t.total)}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function openTable(tableId) {
+            currentActiveTableId = tableId;
+            const t = tables.find(x => x.id === tableId);
+            document.getElementById('table-modal-title').innerText = t.name;
+
+            const body = document.getElementById('table-modal-body');
+            body.innerHTML = `
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                    ${t.items.length === 0 ? '<div class="text-center text-slate-400 py-4">Nenhum pedido nesta mesa.</div>' : 
+                      t.items.map((i, idx) => `
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+                            <span>${i.qty}x ${i.name}</span>
+                            <span class="font-bold">${formatMoney(i.total)}</span>
+                        </div>
+                      `).join('')}
+                </div>
+                <div class="pt-2 border-t flex justify-between font-bold text-sm">
+                    <span>Total Mesa:</span>
+                    <span class="text-emerald-600">${formatMoney(t.total)}</span>
+                </div>
+                <div class="pt-3 space-y-2">
+                    <select id="table-add-prod" class="w-full p-2 border rounded-xl text-xs">
+                        ${products.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.sellPrice)})</option>`).join('')}
+                    </select>
+                    <div class="flex gap-2">
+                        <input type="number" id="table-add-qty" value="1" min="1" class="w-16 p-2 border rounded-xl text-xs text-center">
+                        <button onclick="addItemToTable()" class="flex-1 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs">+ Adicionar Pedido</button>
+                    </div>
+                    ${t.items.length > 0 ? `<button onclick="closeTableAccount(${t.id})" class="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs shadow-md">Fechar Conta & Emitir Talão</button>` : ''}
+                </div>
+            `;
+            document.getElementById('table-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeTableModal() {
+            document.getElementById('table-modal').classList.add('hidden');
+        }
+
+        function addItemToTable() {
+            const prodId = document.getElementById('table-add-prod').value;
+            const qty = parseInt(document.getElementById('table-add-qty').value) || 1;
+            const p = products.find(x => x.id === prodId);
+            const t = tables.find(x => x.id === currentActiveTableId);
+
+            t.items.push({ productId: p.id, name: p.name, price: p.sellPrice, qty, total: p.sellPrice * qty });
+            t.total = t.items.reduce((a,b) => a + b.total, 0);
+            t.status = 'OCUPADA';
+            
+            p.stock -= qty;
+            saveData();
+            openTable(currentActiveTableId);
+        }
+
+        function closeTableAccount(tableId) {
+            const t = tables.find(x => x.id === tableId);
+            const sale = { id: `VND-${Date.now().toString().slice(-4)}`, date: new Date().toISOString().split('T')[0], clientName: t.name, items: t.items, total: t.total, paymentMethod: 'Dinheiro' };
+            sales.unshift(sale);
+            
+            t.items = [];
+            t.total = 0;
+            t.status = 'LIVRE';
+            saveData();
+            closeTableModal();
+            renderCurrentView();
+            alert("Conta fechada e registada com sucesso!");
+        }
+
+        // --- 2. POS / CAIXA ---
+        function renderPOSView(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    ${products.map(p => `
+                        <div onclick="quickSell('${p.id}')" class="bg-white p-4 rounded-2xl border shadow-sm cursor-pointer hover:border-emerald-500 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 font-mono">${p.category}</span>
+                                <h4 class="font-bold text-sm text-slate-800">${p.name}</h4>
+                            </div>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="font-extrabold text-emerald-600">${formatMoney(p.sellPrice)}</span>
+                                <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Stock: ${p.stock}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function quickSell(prodId) {
+            const p = products.find(x => x.id === prodId);
+            if (p.stock <= 0) { alert("Produto esgotado!"); return; }
+            p.stock--;
+            const sale = { id: `VND-${Date.now().toString().slice(-4)}`, date: new Date().toISOString().spl
